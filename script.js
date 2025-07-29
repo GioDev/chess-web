@@ -183,55 +183,52 @@ function isValidMove(startPos, endPos, player, currentBoard, checkSelfCheck = tr
     // Check if target square contains own piece
     if (targetPiece !== ' ' && ((player === 'white' && isTargetWhitePiece) || (player === 'black' && !isTargetWhitePiece))) return false;
 
-    // Piece-specific move rules
+    // --- Start of new logic ---
+    let isPseudoLegal = false;
     const pieceType = piece.toLowerCase();
 
+    // Determine if the move is pseudo-legal (follows piece rules, ignoring checks for now)
     switch (pieceType) {
         case 'p': // Pawn
             if (player === 'white') {
-                // Single square move
-                if (endCol === startCol && endRow === startRow - 1 && targetPiece === ' ') return true;
-                // Two square initial move
-                if (startRow === 6 && endCol === startCol && endRow === startRow - 2 && targetPiece === ' ' && currentBoard[startRow - 1][startCol] === ' ') return true;
-                // Capture
-                if (Math.abs(endCol - startCol) === 1 && endRow === startRow - 1 && targetPiece !== ' ' && !isTargetWhitePiece) return true;
+                if (endCol === startCol && endRow === startRow - 1 && targetPiece === ' ') isPseudoLegal = true;
+                else if (startRow === 6 && endCol === startCol && endRow === startRow - 2 && targetPiece === ' ' && currentBoard[startRow - 1][startCol] === ' ') isPseudoLegal = true;
+                else if (Math.abs(endCol - startCol) === 1 && endRow === startRow - 1 && targetPiece !== ' ' && !isTargetWhitePiece) isPseudoLegal = true;
             } else { // Black pawn
-                // Single square move
-                if (endCol === startCol && endRow === startRow + 1 && targetPiece === ' ') return true;
-                // Two square initial move
-                if (startRow === 1 && endCol === startCol && endRow === startRow + 2 && targetPiece === ' ' && currentBoard[startRow + 1][startCol] === ' ') return true;
-                // Capture
-                if (Math.abs(endCol - startCol) === 1 && endRow === startRow + 1 && targetPiece !== ' ' && isTargetWhitePiece) return true;
+                if (endCol === startCol && endRow === startRow + 1 && targetPiece === ' ') isPseudoLegal = true;
+                else if (startRow === 1 && endCol === startCol && endRow === startRow + 2 && targetPiece === ' ' && currentBoard[startRow + 1][startCol] === ' ') isPseudoLegal = true;
+                else if (Math.abs(endCol - startCol) === 1 && endRow === startRow + 1 && targetPiece !== ' ' && isTargetWhitePiece) isPseudoLegal = true;
             }
-            return false;
-
+            break;
         case 'r': // Rook
-            if ((startRow === endRow || startCol === endCol) && isPathClear(startPos, endPos, currentBoard)) return true;
-            return false;
-
+            if ((startRow === endRow || startCol === endCol) && isPathClear(startPos, endPos, currentBoard)) isPseudoLegal = true;
+            break;
         case 'n': // Knight
             const drKnight = Math.abs(startRow - endRow);
             const dcKnight = Math.abs(startCol - endCol);
-            if ((drKnight === 1 && dcKnight === 2) || (drKnight === 2 && dcKnight === 1)) return true;
-            return false;
-
+            if ((drKnight === 1 && dcKnight === 2) || (drKnight === 2 && dcKnight === 1)) isPseudoLegal = true;
+            break;
         case 'b': // Bishop
-            if (Math.abs(startRow - endRow) === Math.abs(startCol - endCol) && isPathClear(startPos, endPos, currentBoard)) return true;
-            return false;
-
+            if (Math.abs(startRow - endRow) === Math.abs(startCol - endCol) && isPathClear(startPos, endPos, currentBoard)) isPseudoLegal = true;
+            break;
         case 'q': // Queen
-            if (((startRow === endRow || startCol === endCol) || (Math.abs(startRow - endRow) === Math.abs(startCol - endCol))) && isPathClear(startPos, endPos, currentBoard)) return true;
-            return false;
-
+            if (((startRow === endRow || startCol === endCol) || (Math.abs(startRow - endRow) === Math.abs(startCol - endCol))) && isPathClear(startPos, endPos, currentBoard)) isPseudoLegal = true;
+            break;
         case 'k': // King
             const drKing = Math.abs(startRow - endRow);
             const dcKing = Math.abs(startCol - endCol);
-            if (drKing <= 1 && dcKing <= 1) return true;
-            return false;
-
+            if (drKing <= 1 && dcKing <= 1) isPseudoLegal = true;
+            break;
         default:
-            return false;
+            isPseudoLegal = false;
+            break;
     }
+
+    if (!isPseudoLegal) {
+        return false;
+    }
+    // --- End of new logic ---
+
 
     // Check if the move puts the current player's king in check
     if (checkSelfCheck) {
@@ -475,5 +472,36 @@ canvas.addEventListener('click', async (event) => {
         }
     }
 });
+
+
+// --- Testing Function ---
+window.setTestPosition = function(newBoard, newPlayer) {
+    board = newBoard.map(row => [...row]); // Deep copy
+    currentPlayer = newPlayer;
+    gameOver = false;
+    selectedPiece = null;
+    selectedPos = null;
+    
+    // We need to re-evaluate the game state
+    const inCheck = isInCheck(currentPlayer, board);
+    const legalMoves = getLegalMoves(currentPlayer, board);
+
+    console.log(`--- Test Position Set for ${newPlayer} ---`);
+    console.log(`Is ${newPlayer} in check?`, inCheck);
+    console.log(`Number of legal moves for ${newPlayer}:`, legalMoves.length);
+
+    if (legalMoves.length === 0) {
+        if (inCheck) {
+            console.log("STATE: CHECKMATE");
+        } else {
+            console.log("STATE: STALEMATE");
+        }
+        gameOver = true;
+    } else {
+        console.log("STATE: Game on");
+    }
+    
+    drawBoard();
+}
 
 loadImages(drawBoard);

@@ -427,47 +427,39 @@ canvas.addEventListener('click', async (event) => {
     } else {
         // A piece is already selected, try to move it
         if (isValidMove(selectedPos, {row: clickedRow, col: clickedCol}, currentPlayer, board)) {
-            // Simulate the move to check for self-check before actually moving
-            const originalPieceAtTarget = board[clickedRow][clickedCol];
-            const originalPieceAtStart = board[selectedPos.row][selectedPos.col];
-
+            // The move is legal, so perform it
             board[clickedRow][clickedCol] = selectedPiece;
             board[selectedPos.row][selectedPos.col] = ' ';
 
-            if (isInCheck(currentPlayer, board)) {
-                // Undo the move if it results in self-check
-                board[selectedPos.row][selectedPos.col] = originalPieceAtStart;
-                board[clickedRow][clickedCol] = originalPieceAtTarget;
-                console.log("Invalid move: King would be in check!");
-            } else {
-                // Move is valid and does not result in self-check
-                const promoted = await handlePawnPromotion({row: clickedRow, col: clickedCol}, currentPlayer);
-                if (!promoted) {
-                    drawBoard(); // Redraw if not promoted (promotion redraws itself)
-                }
-                selectedPiece = null;
-                selectedPos = null;
-                currentPlayer = (currentPlayer === 'white') ? 'black' : 'white'; // Switch turns
-                checkGameEnd(); // Check for game end after every move
-
-                if (!gameOver && currentPlayer === 'black') {
-                    makeAIMove(); // Trigger AI move if game not over and it's AI's turn
-                }
+            const promoted = await handlePawnPromotion({row: clickedRow, col: clickedCol}, currentPlayer);
+            if (!promoted) {
+                drawBoard(); // Redraw if not promoted (promotion redraws itself)
             }
+
+            selectedPiece = null;
+            selectedPos = null;
+            currentPlayer = (currentPlayer === 'white') ? 'black' : 'white'; // Switch turns
+            checkGameEnd(); // Check for game end after the move
+
+            if (!gameOver && currentPlayer === 'black') {
+                makeAIMove(); // Trigger AI move if the game isn't over
+            }
+
         } else {
             console.log("Invalid move!");
-            // If invalid move, deselect the piece or allow re-selection
-            if (clickedRow === selectedPos.row && clickedCol === selectedPos.col) {
-                selectedPiece = null;
-                selectedPos = null;
-                drawBoard(); // Deselect
-            } else {
+            // If the click was on another of the player's own pieces, select that piece instead.
+            if (clickedPiece !== ' ') {
                 const isWhitePiece = clickedPiece === clickedPiece.toUpperCase();
-                if (clickedPiece !== ' ' && ((currentPlayer === 'white' && isWhitePiece) || (currentPlayer === 'black' && !isWhitePiece))) {
+                if ((currentPlayer === 'white' && isWhitePiece) || (currentPlayer === 'black' && !isWhitePiece)) {
                     selectedPiece = clickedPiece;
                     selectedPos = {row: clickedRow, col: clickedCol};
-                    drawBoard();
+                    drawBoard(); // Redraw to show the new selection
                 }
+            } else {
+                // Otherwise, deselect the piece.
+                selectedPiece = null;
+                selectedPos = null;
+                drawBoard();
             }
         }
     }

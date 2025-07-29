@@ -26,6 +26,7 @@ let board = [
 let selectedPiece = null;
 let selectedPos = null; // {row, col}
 let currentPlayer = 'white'; // 'white' or 'black'
+let gameOver = false;
 
 function loadImages(callback) {
     const pieces = ['bb', 'bk', 'bn', 'bp', 'bq', 'br', 'wb', 'wk', 'wn', 'wp', 'wq', 'wr'];
@@ -235,7 +236,7 @@ function isValidMove(startPos, endPos, player, currentBoard, checkSelfCheck = tr
     // Check if the move puts the current player's king in check
     if (checkSelfCheck) {
         // Simulate the move
-        const simulatedBoard = board.map(row => [...row]); // Deep copy
+        const simulatedBoard = currentBoard.map(row => [...row]); // Deep copy
         simulatedBoard[endRow][endCol] = piece;
         simulatedBoard[startRow][startCol] = ' ';
 
@@ -247,7 +248,162 @@ function isValidMove(startPos, endPos, player, currentBoard, checkSelfCheck = tr
     return true;
 }
 
-canvas.addEventListener('click', (event) => {
+// --- Pawn Promotion Logic ---
+function displayPromotionChoice(player) {
+    return new Promise(resolve => {
+        // Clear previous drawings and draw a semi-transparent overlay
+        drawBoard(); // Redraw board first
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        const promotionOptions = ['Q', 'R', 'B', 'N'];
+        const displayPieces = (player === 'white') ? promotionOptions : promotionOptions.map(p => p.toLowerCase());
+
+        const boxWidth = SQUARE_SIZE * promotionOptions.length;
+        const boxHeight = SQUARE_SIZE;
+        const boxX = (canvas.width - boxWidth) / 2;
+        const boxY = (canvas.height - boxHeight) / 2;
+
+        ctx.fillStyle = '#CCC';
+        ctx.fillRect(boxX, boxY, boxWidth, boxHeight);
+        ctx.strokeStyle = '#333';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(boxX, boxY, boxWidth, boxHeight);
+
+        const optionRects = [];
+        displayPieces.forEach((pieceChar, i) => {
+            const imageKey = (player === 'white') ? 'w' + pieceChar.toLowerCase() : 'b' + pieceChar.toLowerCase();
+            const img = PIECE_IMAGES[imageKey];
+            const x = boxX + i * SQUARE_SIZE;
+            const y = boxY;
+            ctx.drawImage(img, x, y, SQUARE_SIZE, SQUARE_SIZE);
+            optionRects.push({piece: pieceChar, rect: {x: x, y: y, width: SQUARE_SIZE, height: SQUARE_SIZE}});
+        });
+
+        const clickHandler = (event) => {
+            const rect = canvas.getBoundingClientRect();
+            const mouseX = event.clientX - rect.left;
+            const mouseY = event.clientY - rect.top;
+
+            for (const option of optionRects) {
+                if (mouseX >= option.rect.x && mouseX <= (option.rect.x + option.rect.width) &&
+                    mouseY >= option.rect.y && mouseY <= (option.rect.y + option.rect.height)) {
+                    canvas.removeEventListener('click', clickHandler);
+                    resolve(option.piece);
+                    return;
+                }
+            }
+        };
+        canvas.addEventListener('click', clickHandler);
+    });
+}
+
+async function handlePawnPromotion(endPos, player) {
+    const piece = board[endPos.row][endPos.col];
+    if (piece.toLowerCase() === 'p') {
+        if ((player === 'white' && endPos.row === 0) || (player === 'black' && endPos.row === BOARD_SIZE - 1)) {
+            const chosenPiece = await displayPromotionChoice(player);
+            board[endPos.row][endPos.col] = chosenPiece;
+            drawBoard(); // Redraw after promotion
+            return true;
+        }
+    }
+    return false;
+}
+
+// --- Game State and End Conditions ---
+function getLegalMoves(player, currentBoard) {
+    const legalMoves = [];
+    for (let r = 0; r < BOARD_SIZE; r++) {
+        for (let c = 0; c < BOARD_SIZE; c++) {
+            const piece = currentBoard[r][c];
+            if (piece !== ' ') {
+                const isWhitePiece = piece === piece.toUpperCase();
+                if ((player === 'white' && isWhitePiece) || (player === 'black' && !isWhitePiece)) {
+                    for (let endR = 0; endR < BOARD_SIZE; endR++) {
+                        for (let endC = 0; endC < BOARD_SIZE; endC++) {
+                            if (isValidMove({row: r, col: c}, {row: endR, col: endC}, player, currentBoard, true)) {
+                                legalMoves.push({start: {row: r, col: c}, end: {row: endR, col: endC}});
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    return legalMoves;
+}
+
+function checkGameEnd() {
+    console.log(`Checking game end for ${currentPlayer}...`);
+    const legalMovesForNextPlayer = getLegalMoves(currentPlayer, board);
+    console.log(`Legal moves for ${currentPlayer}: ${legalMovesForNextPlayer.length}`);
+    const inCheck = isInCheck(currentPlayer, board);
+    console.log(`${currentPlayer} is in check: ${inCheck}`);
+
+    if (legalMovesForNextPlayer.length === 0) {
+        if (inCheck) {
+            displayMessage(`${currentPlayer.toUpperCase()} is in Checkmate! ${ (currentPlayer === 'white') ? 'Black' : 'White'} wins!`);
+        } else {
+            displayMessage("Stalemate! It's a draw!");
+        }
+        gameOver = true;
+    }
+}
+
+function displayMessage(message) {
+    // Draw a semi-transparent overlay
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    ctx.font = '40px Arial';
+    ctx.fillStyle = 'white';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(message, canvas.width / 2, canvas.height / 2);
+}
+
+// --- AI Logic ---
+async function makeAIMove() {
+    // Small delay for human readability
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    const legalMoves = getLegalMoves(currentPlayer, board);
+
+    if (legalMoves.length > 0) {
+        const randomMove = legalMoves[Math.floor(Math.random() * legalMoves.length)];
+        const startPos = randomMove.start;
+        const endPos = randomMove.end;
+
+        const pieceToMove = board[startPos.row][startPos.col];
+        const originalTargetPiece = board[endPos.row][endPos.col];
+
+        // Perform the move
+        board[endPos.row][endPos.col] = pieceToMove;
+        board[startPos.row][startPos.col] = ' ';
+
+        const promoted = await handlePawnPromotion(endPos, currentPlayer);
+        if (!promoted) {
+            drawBoard(); // Redraw if not promoted (promotion redraws itself)
+        }
+
+        currentPlayer = (currentPlayer === 'white') ? 'black' : 'white'; // Switch turns
+        checkGameEnd();
+
+        // If it's still the AI's turn (e.g., after promotion), make another move
+        if (!gameOver && currentPlayer === 'black') {
+            makeAIMove();
+        }
+
+    } else {
+        checkGameEnd(); // No legal moves, check for checkmate/stalemate
+    }
+}
+
+canvas.addEventListener('click', async (event) => {
+    if (gameOver) return; // Prevent clicks after game ends
+    if (currentPlayer === 'black') return; // Prevent human clicks during AI turn
+
     const rect = canvas.getBoundingClientRect();
     const mouseX = event.clientX - rect.left;
     const mouseY = event.clientY - rect.top;
@@ -274,15 +430,33 @@ canvas.addEventListener('click', (event) => {
     } else {
         // A piece is already selected, try to move it
         if (isValidMove(selectedPos, {row: clickedRow, col: clickedCol}, currentPlayer, board)) {
-            // Move the piece
+            // Simulate the move to check for self-check before actually moving
+            const originalPieceAtTarget = board[clickedRow][clickedCol];
+            const originalPieceAtStart = board[selectedPos.row][selectedPos.col];
+
             board[clickedRow][clickedCol] = selectedPiece;
             board[selectedPos.row][selectedPos.col] = ' ';
 
-            selectedPiece = null;
-            selectedPos = null;
-            currentPlayer = (currentPlayer === 'white') ? 'black' : 'white'; // Switch turns
-            drawBoard(); // Redraw after move
-            console.log(`Moved piece. Current player: ${currentPlayer}`);
+            if (isInCheck(currentPlayer, board)) {
+                // Undo the move if it results in self-check
+                board[selectedPos.row][selectedPos.col] = originalPieceAtStart;
+                board[clickedRow][clickedCol] = originalPieceAtTarget;
+                console.log("Invalid move: King would be in check!");
+            } else {
+                // Move is valid and does not result in self-check
+                const promoted = await handlePawnPromotion({row: clickedRow, col: clickedCol}, currentPlayer);
+                if (!promoted) {
+                    drawBoard(); // Redraw if not promoted (promotion redraws itself)
+                }
+                selectedPiece = null;
+                selectedPos = null;
+                currentPlayer = (currentPlayer === 'white') ? 'black' : 'white'; // Switch turns
+                checkGameEnd(); // Check for game end after every move
+
+                if (!gameOver && currentPlayer === 'black') {
+                    makeAIMove(); // Trigger AI move if game not over and it's AI's turn
+                }
+            }
         } else {
             console.log("Invalid move!");
             // If invalid move, deselect the piece or allow re-selection
@@ -291,7 +465,6 @@ canvas.addEventListener('click', (event) => {
                 selectedPos = null;
                 drawBoard(); // Deselect
             } else {
-                // Optionally, allow selecting a different piece of your own color
                 const isWhitePiece = clickedPiece === clickedPiece.toUpperCase();
                 if (clickedPiece !== ' ' && ((currentPlayer === 'white' && isWhitePiece) || (currentPlayer === 'black' && !isWhitePiece))) {
                     selectedPiece = clickedPiece;

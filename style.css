@@ -11,6 +11,29 @@ body {
     font-family: Arial, sans-serif;
 }
 
+.title-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 20px;
+}
+
+#new-game-btn {
+    margin-left: 20px;
+    padding: 10px 15px;
+    font-size: 1em;
+    cursor: pointer;
+    background-color: #4CAF50; /* Green */
+    color: white;
+    border: none;
+    border-radius: 5px;
+    transition: background-color 0.3s;
+}
+
+#new-game-btn:hover {
+    background-color: #45a049;
+}
+
 #game-container {
     display: flex;
     flex-direction: row; /* The board and history will be in a row */

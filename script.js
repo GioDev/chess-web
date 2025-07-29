@@ -25,6 +25,7 @@ let board = [
 
 let selectedPiece = null;
 let selectedPos = null; // {row, col}
+let legalMovesForSelectedPiece = [];
 let currentPlayer = 'white'; // 'white' or 'black'
 let gameOver = false;
 
@@ -60,6 +61,14 @@ function drawBoard() {
             if (selectedPos && selectedPos.row === row && selectedPos.col === col) {
                 ctx.fillStyle = HIGHLIGHT_COLOR;
                 ctx.fillRect(col * SQUARE_SIZE, row * SQUARE_SIZE, SQUARE_SIZE, SQUARE_SIZE);
+            }
+
+            // Highlight legal moves
+            if (legalMovesForSelectedPiece.some(move => move.end.row === row && move.end.col === col)) {
+                ctx.fillStyle = 'rgba(0, 255, 0, 0.4)'; // Green with transparency
+                ctx.beginPath();
+                ctx.arc(col * SQUARE_SIZE + SQUARE_SIZE / 2, row * SQUARE_SIZE + SQUARE_SIZE / 2, SQUARE_SIZE / 5, 0, 2 * Math.PI);
+                ctx.fill();
             }
 
             const piece = board[row][col];
@@ -467,7 +476,8 @@ canvas.addEventListener('click', async (event) => {
             if ((currentPlayer === 'white' && isWhitePiece) || (currentPlayer === 'black' && !isWhitePiece)) {
                 selectedPiece = clickedPiece;
                 selectedPos = {row: clickedRow, col: clickedCol};
-                drawBoard(); // Redraw to show selection
+                legalMovesForSelectedPiece = getLegalMoves(currentPlayer, board).filter(move => move.start.row === clickedRow && move.start.col === clickedCol);
+                drawBoard(); // Redraw to show selection and legal moves
             } else {
                 console.log("Not your piece!");
             }
@@ -488,6 +498,7 @@ canvas.addEventListener('click', async (event) => {
 
             selectedPiece = null;
             selectedPos = null;
+            legalMovesForSelectedPiece = []; // Clear legal moves
             currentPlayer = (currentPlayer === 'white') ? 'black' : 'white'; // Switch turns
             checkGameEnd(); // Check for game end after the move
 
@@ -503,12 +514,14 @@ canvas.addEventListener('click', async (event) => {
                 if ((currentPlayer === 'white' && isWhitePiece) || (currentPlayer === 'black' && !isWhitePiece)) {
                     selectedPiece = clickedPiece;
                     selectedPos = {row: clickedRow, col: clickedCol};
+                    legalMovesForSelectedPiece = getLegalMoves(currentPlayer, board).filter(move => move.start.row === clickedRow && move.start.col === clickedCol);
                     drawBoard(); // Redraw to show the new selection
                 }
             } else {
                 // Otherwise, deselect the piece.
                 selectedPiece = null;
                 selectedPos = null;
+                legalMovesForSelectedPiece = []; // Clear legal moves
                 drawBoard();
             }
         }

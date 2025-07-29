@@ -26,6 +26,7 @@ let board = [
 let selectedPiece = null;
 let selectedPos = null; // {row, col}
 let legalMovesForSelectedPiece = [];
+let moveHistory = [];
 let currentPlayer = 'white'; // 'white' or 'black'
 let gameOver = false;
 
@@ -403,6 +404,43 @@ function displayMessage(message) {
     ctx.fillText(message, canvas.width / 2, canvas.height / 2);
 }
 
+function toChessNotation(pos) {
+    const col = String.fromCharCode('a'.charCodeAt(0) + pos.col);
+    const row = 8 - pos.row;
+    return `${col}${row}`;
+}
+
+function recordMove(startPos, endPos, piece) {
+    const moveNumber = Math.floor(moveHistory.length / 2) + 1;
+    const playerColor = (piece === piece.toUpperCase()) ? 'White' : 'Black';
+    const moveString = `${toChessNotation(startPos)} to ${toChessNotation(endPos)}`;
+
+    if (playerColor === 'White') {
+        moveHistory.push(`${moveNumber}. ${moveString}`);
+    } else {
+        // If the last move was white's, append black's move to the same line.
+        if (moveHistory.length > 0 && !moveHistory[moveHistory.length - 1].includes('...')) {
+            moveHistory[moveHistory.length - 1] += ` ... ${moveString}`;
+        } else {
+            moveHistory.push(`${moveNumber}. ... ${moveString}`);
+        }
+    }
+    updateMoveHistoryDisplay();
+}
+
+function updateMoveHistoryDisplay() {
+    const historyContainer = document.getElementById('move-history');
+    if (!historyContainer) return;
+    historyContainer.innerHTML = ''; // Clear previous history
+    moveHistory.forEach(move => {
+        const moveElement = document.createElement('p');
+        moveElement.textContent = move;
+        historyContainer.appendChild(moveElement);
+    });
+    // Auto-scroll to the bottom
+    historyContainer.scrollTop = historyContainer.scrollHeight;
+}
+
 // --- AI Logic ---
 async function makeAIMove() {
     // Small delay for human readability
@@ -439,6 +477,8 @@ async function makeAIMove() {
         const startPos = bestMove.start;
         const endPos = bestMove.end;
         const pieceToMove = board[startPos.row][startPos.col];
+
+        recordMove(startPos, endPos, pieceToMove);
 
         board[endPos.row][endPos.col] = pieceToMove;
         board[startPos.row][startPos.col] = ' ';
@@ -488,6 +528,9 @@ canvas.addEventListener('click', async (event) => {
         // A piece is already selected, try to move it
         if (isValidMove(selectedPos, {row: clickedRow, col: clickedCol}, currentPlayer, board)) {
             // The move is legal, so perform it
+            const pieceToMove = board[selectedPos.row][selectedPos.col];
+            recordMove(selectedPos, {row: clickedRow, col: clickedCol}, pieceToMove);
+
             board[clickedRow][clickedCol] = selectedPiece;
             board[selectedPos.row][selectedPos.col] = ' ';
 

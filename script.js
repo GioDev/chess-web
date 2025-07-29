@@ -308,6 +308,40 @@ async function handlePawnPromotion(endPos, player) {
     return false;
 }
 
+function getPieceValue(piece) {
+    if (!piece || piece === ' ') return 0;
+    const pieceType = piece.toLowerCase();
+    switch (pieceType) {
+        case 'p': return 1;
+        case 'n': return 3;
+        case 'b': return 3;
+        case 'r': return 5;
+        case 'q': return 9;
+        case 'k': return 1000; // King value is effectively infinite
+        default: return 0;
+    }
+}
+
+function evaluateBoard(currentBoard, player) {
+    let score = 0;
+    for (let row = 0; row < BOARD_SIZE; row++) {
+        for (let col = 0; col < BOARD_SIZE; col++) {
+            const piece = currentBoard[row][col];
+            if (piece !== ' ') {
+                const value = getPieceValue(piece);
+                const isWhite = piece === piece.toUpperCase();
+                if (isWhite) {
+                    score += value;
+                } else {
+                    score -= value;
+                }
+            }
+        }
+    }
+    // Return score relative to the player. A positive score is good for white, negative is good for black.
+    return player === 'white' ? score : -score;
+}
+
 // --- Game State and End Conditions ---
 function getLegalMoves(player, currentBoard) {
     const legalMoves = [];
@@ -363,37 +397,53 @@ function displayMessage(message) {
 // --- AI Logic ---
 async function makeAIMove() {
     // Small delay for human readability
-    await new Promise(resolve => setTimeout(resolve, 500));
+    await new Promise(resolve => setTimeout(resolve, 200));
 
     const legalMoves = getLegalMoves(currentPlayer, board);
 
-    if (legalMoves.length > 0) {
-        const randomMove = legalMoves[Math.floor(Math.random() * legalMoves.length)];
-        const startPos = randomMove.start;
-        const endPos = randomMove.end;
+    if (legalMoves.length === 0) {
+        checkGameEnd(); // No legal moves, check for checkmate/stalemate
+        return;
+    }
 
+    let bestMove = null;
+    let bestScore = -Infinity; // AI is black, trying to minimize white's score (or maximize its own)
+
+    for (const move of legalMoves) {
+        // Simulate the move
+        const simulatedBoard = board.map(row => [...row]);
+        const pieceToMove = simulatedBoard[move.start.row][move.start.col];
+        simulatedBoard[move.end.row][move.end.col] = pieceToMove;
+        simulatedBoard[move.start.row][move.start.col] = ' ';
+
+        // Evaluate the board from the AI's perspective (black)
+        const score = evaluateBoard(simulatedBoard, 'black');
+
+        if (score > bestScore) {
+            bestScore = score;
+            bestMove = move;
+        }
+    }
+    
+    // Make the best move found
+    if (bestMove) {
+        const startPos = bestMove.start;
+        const endPos = bestMove.end;
         const pieceToMove = board[startPos.row][startPos.col];
-        const originalTargetPiece = board[endPos.row][endPos.col];
 
-        // Perform the move
         board[endPos.row][endPos.col] = pieceToMove;
         board[startPos.row][startPos.col] = ' ';
 
         const promoted = await handlePawnPromotion(endPos, currentPlayer);
         if (!promoted) {
-            drawBoard(); // Redraw if not promoted (promotion redraws itself)
+            drawBoard();
         }
 
-        currentPlayer = (currentPlayer === 'white') ? 'black' : 'white'; // Switch turns
+        currentPlayer = 'white'; // Switch back to human player
         checkGameEnd();
-
-        // If it's still the AI's turn (e.g., after promotion), make another move
-        if (!gameOver && currentPlayer === 'black') {
-            makeAIMove();
-        }
-
     } else {
-        checkGameEnd(); // No legal moves, check for checkmate/stalemate
+        // This should not happen if there are legal moves, but as a fallback:
+        checkGameEnd();
     }
 }
 

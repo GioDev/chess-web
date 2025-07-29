@@ -1,6 +1,8 @@
 const canvas = document.getElementById('chessCanvas');
 const ctx = canvas.getContext('2d');
 
+const VERSION = '1.0.0';
+
 const BOARD_SIZE = 8;
 const SQUARE_SIZE = canvas.width / BOARD_SIZE;
 
@@ -602,4 +604,14 @@ window.setTestPosition = function(newBoard, newPlayer) {
     drawBoard();
 }
 
-loadImages(drawBoard);
+function setVersion() {
+    const versionSpan = document.getElementById('version-info');
+    if (versionSpan) {
+        versionSpan.textContent = `v${VERSION}`;
+    }
+}
+
+loadImages(() => {
+    drawBoard();
+    setVersion();
+});

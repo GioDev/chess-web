@@ -1,7 +1,7 @@
 const canvas = document.getElementById('chessCanvas');
 const ctx = canvas.getContext('2d');
 
-const VERSION = '1.2.0';
+const VERSION = '1.3.0';
 
 const BOARD_SIZE = 8;
 const SQUARE_SIZE = canvas.width / BOARD_SIZE;
@@ -403,38 +403,129 @@ async function handlePawnPromotion(endPos, player) {
     return false;
 }
 
-function getPieceValue(piece) {
+const pawnEvalWhite = [
+    [0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0],
+    [5.0,  5.0,  5.0,  5.0,  5.0,  5.0,  5.0,  5.0],
+    [1.0,  1.0,  2.0,  3.0,  3.0,  2.0,  1.0,  1.0],
+    [0.5,  0.5,  1.0,  2.5,  2.5,  1.0,  0.5,  0.5],
+    [0.0,  0.0,  0.0,  2.0,  2.0,  0.0,  0.0,  0.0],
+    [0.5, -0.5, -1.0,  0.0,  0.0, -1.0, -0.5,  0.5],
+    [0.5,  1.0, 1.0,  -2.0, -2.0,  1.0,  1.0,  0.5],
+    [0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0]
+];
+
+const pawnEvalBlack = pawnEvalWhite.slice().reverse();
+
+const knightEval = [
+    [-5.0, -4.0, -3.0, -3.0, -3.0, -3.0, -4.0, -5.0],
+    [-4.0, -2.0,  0.0,  0.0,  0.0,  0.0, -2.0, -4.0],
+    [-3.0,  0.0,  1.0,  1.5,  1.5,  1.0,  0.0, -3.0],
+    [-3.0,  0.5,  1.5,  2.0,  2.0,  1.5,  0.5, -3.0],
+    [-3.0,  0.0,  1.5,  2.0,  2.0,  1.5,  0.0, -3.0],
+    [-3.0,  0.5,  1.0,  1.5,  1.5,  1.0,  0.5, -3.0],
+    [-4.0, -2.0,  0.0,  0.5,  0.5,  0.0, -2.0, -4.0],
+    [-5.0, -4.0, -3.0, -3.0, -3.0, -3.0, -4.0, -5.0]
+];
+
+const bishopEvalWhite = [
+    [ -2.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -2.0],
+    [ -1.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0, -1.0],
+    [ -1.0,  0.0,  0.5,  1.0,  1.0,  0.5,  0.0, -1.0],
+    [ -1.0,  0.5,  0.5,  1.0,  1.0,  0.5,  0.5, -1.0],
+    [ -1.0,  0.0,  1.0,  1.0,  1.0,  1.0,  0.0, -1.0],
+    [ -1.0,  1.0,  1.0,  1.0,  1.0,  1.0,  1.0, -1.0],
+    [ -1.0,  0.5,  0.0,  0.0,  0.0,  0.0,  0.5, -1.0],
+    [ -2.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -2.0]
+];
+
+const bishopEvalBlack = bishopEvalWhite.slice().reverse();
+
+const rookEvalWhite = [
+    [  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0],
+    [  0.5,  1.0,  1.0,  1.0,  1.0,  1.0,  1.0,  0.5],
+    [ -0.5,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0, -0.5],
+    [ -0.5,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0, -0.5],
+    [ -0.5,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0, -0.5],
+    [ -0.5,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0, -0.5],
+    [ -0.5,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0, -0.5],
+    [  0.0,   0.0, 0.0,  0.5,  0.5,  0.0,  0.0,  0.0]
+];
+
+const rookEvalBlack = rookEvalWhite.slice().reverse();
+
+const queenEval = [
+    [ -2.0, -1.0, -1.0, -0.5, -0.5, -1.0, -1.0, -2.0],
+    [ -1.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0, -1.0],
+    [ -1.0,  0.0,  0.5,  0.5,  0.5,  0.5,  0.0, -1.0],
+    [ -0.5,  0.0,  0.5,  0.5,  0.5,  0.5,  0.0, -0.5],
+    [  0.0,  0.0,  0.5,  0.5,  0.5,  0.5,  0.0, -0.5],
+    [ -1.0,  0.5,  0.5,  0.5,  0.5,  0.5,  0.0, -1.0],
+    [ -1.0,  0.0,  0.5,  0.0,  0.0,  0.0,  0.0, -1.0],
+    [ -2.0, -1.0, -1.0, -0.5, -0.5, -1.0, -1.0, -2.0]
+];
+
+const kingEvalWhite = [
+    [ -3.0, -4.0, -4.0, -5.0, -5.0, -4.0, -4.0, -3.0],
+    [ -3.0, -4.0, -4.0, -5.0, -5.0, -4.0, -4.0, -3.0],
+    [ -3.0, -4.0, -4.0, -5.0, -5.0, -4.0, -4.0, -3.0],
+    [ -3.0, -4.0, -4.0, -5.0, -5.0, -4.0, -4.0, -3.0],
+    [ -2.0, -3.0, -3.0, -4.0, -4.0, -3.0, -3.0, -2.0],
+    [ -1.0, -2.0, -2.0, -2.0, -2.0, -2.0, -2.0, -1.0],
+    [  2.0,  2.0,  0.0,  0.0,  0.0,  0.0,  2.0,  2.0 ],
+    [  2.0,  3.0,  1.0,  0.0,  0.0,  1.0,  3.0,  2.0 ]
+];
+
+const kingEvalBlack = kingEvalWhite.slice().reverse();
+
+function getPieceValue(piece, row, col) {
     if (!piece || piece === ' ') return 0;
     const pieceType = piece.toLowerCase();
+    const isWhite = piece === piece.toUpperCase();
+    let positionalValue = 0;
+
     switch (pieceType) {
-        case 'p': return 1;
-        case 'n': return 3;
-        case 'b': return 3;
-        case 'r': return 5;
-        case 'q': return 9;
-        case 'k': return 1000; // King value is effectively infinite
+        case 'p': 
+            positionalValue = isWhite ? pawnEvalWhite[row][col] : pawnEvalBlack[row][col];
+            return 10 + positionalValue;
+        case 'n': 
+            positionalValue = knightEval[row][col];
+            return 30 + positionalValue;
+        case 'b': 
+            positionalValue = isWhite ? bishopEvalWhite[row][col] : bishopEvalBlack[row][col];
+            return 30 + positionalValue;
+        case 'r': 
+            positionalValue = isWhite ? rookEvalWhite[row][col] : rookEvalBlack[row][col];
+            return 50 + positionalValue;
+        case 'q': 
+            positionalValue = queenEval[row][col];
+            return 90 + positionalValue;
+        case 'k': 
+            positionalValue = isWhite ? kingEvalWhite[row][col] : kingEvalBlack[row][col];
+            return 900 + positionalValue;
         default: return 0;
     }
 }
 
-function evaluateBoard(currentBoard, player) {
-    let score = 0;
+function evaluateBoard(currentBoard) {
+    let totalScore = 0;
     for (let row = 0; row < BOARD_SIZE; row++) {
         for (let col = 0; col < BOARD_SIZE; col++) {
             const piece = currentBoard[row][col];
             if (piece !== ' ') {
-                const value = getPieceValue(piece);
+                const value = getPieceValue(piece, row, col);
                 const isWhite = piece === piece.toUpperCase();
                 if (isWhite) {
-                    score += value;
+                    totalScore += value;
                 } else {
-                    score -= value;
+                    totalScore -= value;
                 }
             }
         }
     }
-    // Return score relative to the player. A positive score is good for white, negative is good for black.
-    return player === 'white' ? score : -score;
+    // The evaluation must be from the perspective of the AI player (black)
+    // A positive score should be good for the AI, negative for the human.
+    // Since white is positive and black is negative in totalScore, we negate it for black's perspective.
+    return -totalScore;
 }
 
 // --- Game State and End Conditions ---
@@ -528,42 +619,65 @@ function updateMoveHistoryDisplay() {
 
 // --- AI Logic ---
 async function makeAIMove() {
-    // Small delay for human readability
-    await new Promise(resolve => setTimeout(resolve, 200));
+    // AI is always black in this implementation
+    const depth = 3; // Search depth
+    const bestMove = findBestMove(depth, board, 'black');
 
-    const legalMoves = getLegalMoves(currentPlayer, board);
-
-    if (legalMoves.length === 0) {
-        checkGameEnd(); // No legal moves, check for checkmate/stalemate
-        return;
-    }
-
-    let bestMove = null;
-    let bestScore = -Infinity; // AI is black, trying to minimize white's score (or maximize its own)
-
-    for (const move of legalMoves) {
-        // Simulate the move
-        const simulatedBoard = board.map(row => [...row]);
-        const pieceToMove = simulatedBoard[move.start.row][move.start.col];
-        simulatedBoard[move.end.row][move.end.col] = pieceToMove;
-        simulatedBoard[move.start.row][move.start.col] = ' ';
-
-        // Evaluate the board from the AI's perspective (black)
-        const score = evaluateBoard(simulatedBoard, 'black');
-
-        if (score > bestScore) {
-            bestScore = score;
-            bestMove = move;
-        }
-    }
-    
-    // Make the best move found
     if (bestMove) {
         const startPos = bestMove.start;
         const endPos = bestMove.end;
         const pieceToMove = board[startPos.row][startPos.col];
 
         recordMove(startPos, endPos, pieceToMove);
+
+        // --- Handle Special Moves --- 
+
+        // 1. En Passant
+        if (pieceToMove.toLowerCase() === 'p' && enPassantTarget && endPos.row === enPassantTarget.row && endPos.col === enPassantTarget.col) {
+            const capturedPawnRow = (currentPlayer === 'white') ? endPos.row + 1 : endPos.row - 1;
+            board[capturedPawnRow][endPos.col] = ' '; // Remove the captured pawn
+        }
+
+        // 2. Castling
+        if (pieceToMove.toLowerCase() === 'k' && Math.abs(startPos.col - endPos.col) === 2) {
+            if (endPos.col === 6) { // King-side
+                const rook = board[startPos.row][7];
+                board[startPos.row][5] = rook;
+                board[startPos.row][7] = ' ';
+            } else { // Queen-side
+                const rook = board[startPos.row][0];
+                board[startPos.row][3] = rook;
+                board[startPos.row][0] = ' ';
+            }
+        }
+
+        // --- Update State --- 
+
+        // Reset en passant target each turn
+        enPassantTarget = null;
+        // Set new en passant target if a pawn moved two squares
+        if (pieceToMove.toLowerCase() === 'p' && Math.abs(startPos.row - endPos.row) === 2) {
+            enPassantTarget = {row: (startPos.row + endPos.row) / 2, col: startPos.col};
+        }
+
+        // Update castling rights if a king or rook moves
+        if (pieceToMove === 'K') {
+            castlingRights.white.kingSide = false;
+            castlingRights.white.queenSide = false;
+        } else if (pieceToMove === 'k') {
+            castlingRights.black.kingSide = false;
+            castlingRights.black.queenSide = false;
+        } else if (pieceToMove === 'R' && startPos.row === 7 && startPos.col === 7) {
+            castlingRights.white.kingSide = false;
+        } else if (pieceToMove === 'R' && startPos.row === 7 && startPos.col === 0) {
+            castlingRights.white.queenSide = false;
+        } else if (pieceToMove === 'r' && startPos.row === 0 && startPos.col === 7) {
+            castlingRights.black.kingSide = false;
+        } else if (pieceToMove === 'r' && startPos.row === 0 && startPos.col === 0) {
+            castlingRights.black.queenSide = false;
+        }
+
+        // --- Make the Move & Continue Game --- 
 
         board[endPos.row][endPos.col] = pieceToMove;
         board[startPos.row][startPos.col] = ' ';
@@ -576,9 +690,79 @@ async function makeAIMove() {
         currentPlayer = 'white'; // Switch back to human player
         checkGameEnd();
     } else {
-        // This should not happen if there are legal moves, but as a fallback:
-        checkGameEnd();
+        checkGameEnd(); // No legal moves, check for checkmate/stalemate
     }
+}
+
+function findBestMove(depth, currentBoard, player) {
+    let bestMove = null;
+    let bestScore = -Infinity;
+
+    const legalMoves = getLegalMoves(player, currentBoard);
+    // Shuffle moves to add some unpredictability
+    legalMoves.sort(() => Math.random() - 0.5);
+
+    for (const move of legalMoves) {
+        const simulatedBoard = simulateMove(currentBoard, move);
+        const score = minimax(depth - 1, simulatedBoard, -Infinity, Infinity, false); // false because it's now opponent's turn
+
+        if (score > bestScore) {
+            bestScore = score;
+            bestMove = move;
+        }
+    }
+    return bestMove;
+}
+
+function minimax(depth, currentBoard, alpha, beta, isMaximizingPlayer) {
+    if (depth === 0) {
+        return evaluateBoard(currentBoard);
+    }
+
+    const player = isMaximizingPlayer ? 'black' : 'white';
+    const legalMoves = getLegalMoves(player, currentBoard);
+
+    if (legalMoves.length === 0) {
+        if (isInCheck(player, currentBoard)) {
+            return isMaximizingPlayer ? -10000 : 10000; // Checkmate
+        } else {
+            return 0; // Stalemate
+        }
+    }
+
+    if (isMaximizingPlayer) {
+        let maxEval = -Infinity;
+        for (const move of legalMoves) {
+            const simulatedBoard = simulateMove(currentBoard, move);
+            const evalScore = minimax(depth - 1, simulatedBoard, alpha, beta, false);
+            maxEval = Math.max(maxEval, evalScore);
+            alpha = Math.max(alpha, evalScore);
+            if (beta <= alpha) {
+                break; // Beta cutoff
+            }
+        }
+        return maxEval;
+    } else { // Minimizing player (white)
+        let minEval = Infinity;
+        for (const move of legalMoves) {
+            const simulatedBoard = simulateMove(currentBoard, move);
+            const evalScore = minimax(depth - 1, simulatedBoard, alpha, beta, true);
+            minEval = Math.min(minEval, evalScore);
+            beta = Math.min(beta, evalScore);
+            if (beta <= alpha) {
+                break; // Alpha cutoff
+            }
+        }
+        return minEval;
+    }
+}
+
+function simulateMove(board, move) {
+    const newBoard = board.map(row => [...row]);
+    const piece = newBoard[move.start.row][move.start.col];
+    newBoard[move.end.row][move.end.col] = piece;
+    newBoard[move.start.row][move.start.col] = ' ';
+    return newBoard;
 }
 
 canvas.addEventListener('click', async (event) => {

@@ -9,7 +9,8 @@
 <body>
     <div class="title-container">
         <h1>Chess Game</h1>
-        <button id="new-game-btn">New Game</button>
+        <button id="new-game-btn" class="btn">New Game</button>
+        <button id="save-game-btn" class="btn">Save Game</button>
     </div>
     <p>Not seeing the latest changes? Try a hard refresh: Ctrl + Shift + R | <span id="version-info"></span></p>
     <div id="game-container">
@@ -19,6 +20,14 @@
             <div id="move-history"></div>
         </div>
     </div>
+
+    <div id="saved-games-container">
+        <div id="saved-games-list">
+            <h2>Saved Games</h2>
+            <ul id="games-list"></ul>
+        </div>
+    </div>
+
     <script src="script.js"></script>
 </body>
 </html>

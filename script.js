@@ -565,6 +565,7 @@ function checkGameEnd() {
             displayMessage("Stalemate! It's a draw!");
         }
         gameOver = true;
+        saveGame();
     }
 }
 
@@ -930,8 +931,62 @@ function setVersion() {
     }
 }
 
+
+
 loadImages(() => {
     drawBoard();
     setVersion();
     document.getElementById('new-game-btn').addEventListener('click', resetGame);
+    document.getElementById('save-game-btn').addEventListener('click', saveGame);
+    loadSavedGames();
 });
+
+function saveGame() {
+    if (moveHistory.length === 0) {
+        alert("Please make at least one move before saving the game.");
+        return;
+    }
+    const savedGames = JSON.parse(localStorage.getItem('savedChessGames')) || [];
+    const gameData = {
+        date: new Date().toLocaleString(),
+        moveHistory: moveHistory,
+        board: board,
+        currentPlayer: currentPlayer,
+        gameOver: gameOver,
+        enPassantTarget: enPassantTarget,
+        castlingRights: castlingRights
+    };
+    savedGames.push(gameData);
+    localStorage.setItem('savedChessGames', JSON.stringify(savedGames));
+    loadSavedGames(); // Refresh the list
+}
+
+function loadSavedGames() {
+    const savedGames = JSON.parse(localStorage.getItem('savedChessGames')) || [];
+    const gamesList = document.getElementById('games-list');
+    gamesList.innerHTML = '';
+
+    savedGames.reverse().forEach((game, index) => {
+        const listItem = document.createElement('li');
+        listItem.textContent = `Game from ${game.date}`;
+        
+        const loadGameBtn = document.createElement('button');
+        loadGameBtn.textContent = 'Load Game';
+        loadGameBtn.onclick = () => {
+            board = game.board;
+            moveHistory = game.moveHistory;
+            currentPlayer = game.currentPlayer;
+            gameOver = game.gameOver;
+            enPassantTarget = game.enPassantTarget;
+            castlingRights = game.castlingRights;
+            updateMoveHistoryDisplay();
+            drawBoard();
+        };
+
+        listItem.appendChild(loadGameBtn);
+        gamesList.appendChild(listItem);
+    });
+}
+
+
+

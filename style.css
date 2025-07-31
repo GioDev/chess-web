@@ -18,7 +18,7 @@ body {
     margin-bottom: 20px;
 }
 
-#new-game-btn {
+.btn {
     margin-left: 20px;
     padding: 10px 15px;
     font-size: 1em;
@@ -30,7 +30,7 @@ body {
     transition: background-color 0.3s;
 }
 
-#new-game-btn:hover {
+.btn:hover {
     background-color: #45a049;
 }
 
@@ -44,7 +44,7 @@ body {
     margin-left: 20px;
     padding: 10px;
     width: 200px;
-    height: 480px; /* Match canvas height */
+    height: 460px; /* Match canvas height */
     background-color: #333;
     border: 2px solid #eee;
     border-radius: 5px;
@@ -76,4 +76,31 @@ footer {
     text-align: center;
     font-size: 0.9em;
     color: #888;
+}
+
+#saved-games-container {
+    margin-top: 20px;
+    padding: 10px;
+    width: 690px;
+    background-color: #333;
+    border: 2px solid #eee;
+    border-radius: 5px;
+}
+
+#games-list {
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
+}
+
+#games-list li {
+    padding: 5px;
+    border-bottom: 1px solid #555;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+#games-list li:last-child {
+    border-bottom: none;
 }

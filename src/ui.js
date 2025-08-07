@@ -154,7 +154,13 @@ export function loadSavedGames() {
     const savedGames = JSON.parse(localStorage.getItem('savedChessGames')) || [];
     gamesList.innerHTML = '';
 
-    savedGames.forEach((game, index) => {
+    // Reverse the array to show the most recent games first
+    const reversedGames = [...savedGames].reverse();
+
+    reversedGames.forEach((game, reversedIndex) => {
+        // The actual index in the original savedGames array
+        const originalIndex = savedGames.length - 1 - reversedIndex;
+
         const listItem = document.createElement('li');
 
         const gameInfo = document.createElement('span');
@@ -166,13 +172,13 @@ export function loadSavedGames() {
         const loadGameBtn = document.createElement('button');
         loadGameBtn.textContent = 'Load';
         loadGameBtn.className = 'btn';
-        loadGameBtn.onclick = () => loadGame(index);
+        loadGameBtn.onclick = () => loadGame(originalIndex);
         btnContainer.appendChild(loadGameBtn);
 
         const deleteGameBtn = document.createElement('button');
         deleteGameBtn.textContent = 'Delete';
         deleteGameBtn.className = 'btn delete-btn';
-        deleteGameBtn.onclick = () => deleteGame(index);
+        deleteGameBtn.onclick = () => deleteGame(originalIndex);
         btnContainer.appendChild(deleteGameBtn);
 
         listItem.appendChild(btnContainer);

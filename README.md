@@ -22,13 +22,19 @@ This project is a basic implementation of a chess game playable directly in a we
 -   **Piece Selection:** Click on your own pieces to select them. Selected pieces are highlighted.
 -   **Move Validation:** Implements core chess rules for piece movement (Pawn, Rook, Knight, Bishop, Queen, King), including castling and en passant.
 -   **Turn-Based Gameplay:** Supports local two-player gameplay, alternating turns between White and Black.
--   **AI Opponent:** Play against a JavaScript-based AI.
-    -   **Version 1.2.0:** Simple 1-ply search AI.
-    -   **Version 1.3.0:** Advanced AI using a minimax algorithm with alpha-beta pruning and a sophisticated board evaluation function.
+-   **AI Opponent:** Play against a JavaScript-based AI with selectable difficulty.
+    -   Advanced AI using a minimax algorithm with alpha-beta pruning.
+    -   Selectable difficulty (Easy, Medium, Hard) that adjusts the AI's search depth.
 -   **Pawn Promotion:** UI and logic for pawn promotion.
 -   **Check and Checkmate Detection:** Full logic to detect when a King is in check, and determine checkmate or stalemate conditions.
+-   **Save/Load Games:** Save the current game state to your browser's local storage and load it later.
+-   **UI/UX Improvements:**
+    -   Includes a move history panel.
+    -   Visual indicator displays when the AI is "thinking".
 
 ## How to Run
+
+This project uses modern JavaScript (ES6 Modules), which requires the files to be served by a web server to function correctly due to browser security policies (CORS).
 
 1.  **Clone the repository:**
     ```bash
@@ -38,18 +44,29 @@ This project is a basic implementation of a chess game playable directly in a we
     ```bash
     cd chess-web
     ```
-3.  **Open `index.html`:**
-    Simply open the `index.html` file in your preferred web browser. No web server is required for basic functionality.
+3.  **Start a local web server:**
+    The simplest way is to use Python's built-in server. Open your terminal in the project directory and run one of the following commands:
+
+    -   If you have Python 3:
+        ```bash
+        python -m http.server
+        ```
+    -   If you have Python 2:
+        ```bash
+        python -m SimpleHTTPServer
+        ```
+4.  **Open the game in your browser:**
+    Navigate to `http://localhost:8000` in your web browser.
 
 ## Technologies Used
 
 -   **HTML5:** For the basic structure of the web page and the `<canvas>` element.
 -   **CSS3:** For styling the page and the chessboard.
--   **JavaScript (ES6+):** For all the game logic, canvas drawing, and user interaction.
+-   **JavaScript (ES6+ Modules):** For all the game logic, canvas drawing, and user interaction, organized into modules for better maintainability.
 
 ## Future Enhancements
 
--   **Game State Management:** More robust handling of game states (e.g., draw conditions).
+-   **Draw Conditions:** More robust handling of draw conditions like threefold repetition and the 50-move rule.
 -   **User Interface Improvements:** Enhance the UI with move history, score, and better visual feedback.
 -   **Multiplayer:** Integrate WebSocket or other real-time communication for online multiplayer.
 -   **Opening Book:** Add a small opening book to the AI to improve its opening play.

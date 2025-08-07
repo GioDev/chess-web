@@ -202,10 +202,13 @@ export function saveGame() {
         return;
     }
     const savedGames = JSON.parse(localStorage.getItem('savedChessGames')) || [];
-    const gameData = {
+
+    // Create a deep copy of the gameState to prevent reference issues
+    const gameData = JSON.parse(JSON.stringify({
         date: new Date().toLocaleString(),
         ...gameState
-    };
+    }));
+
     savedGames.push(gameData);
     localStorage.setItem('savedChessGames', JSON.stringify(savedGames));
     UI.loadSavedGames();

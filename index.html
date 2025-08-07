@@ -9,12 +9,28 @@
 <body>
     <div class="title-container">
         <h1>Chess Game</h1>
-        <button id="new-game-btn" class="btn">New Game</button>
-        <button id="save-game-btn" class="btn">Save Game</button>
+        <div class="controls">
+            <button id="new-game-btn" class="btn">New Game</button>
+            <button id="save-game-btn" class="btn">Save Game</button>
+            <div class="difficulty-control">
+                <label for="difficulty-selector">AI Difficulty:</label>
+                <select id="difficulty-selector" class="btn">
+                    <option value="2">Easy</option>
+                    <option value="3" selected>Medium</option>
+                    <option value="4">Hard</option>
+                </select>
+            </div>
+        </div>
     </div>
     <p>Not seeing the latest changes? Try a hard refresh: Ctrl + Shift + R | <span id="version-info"></span></p>
     <div id="game-container">
-        <canvas id="chessCanvas" width="480" height="480"></canvas>
+        <div class="board-container">
+            <canvas id="chessCanvas"></canvas>
+            <div id="thinking-indicator" style="display: none;">
+                <div class="spinner"></div>
+                <p>AI is thinking...</p>
+            </div>
+        </div>
         <div id="move-history-container">
             <h2>Move History</h2>
             <div id="move-history"></div>
@@ -22,12 +38,10 @@
     </div>
 
     <div id="saved-games-container">
-        <div id="saved-games-list">
-            <h2>Saved Games</h2>
-            <ul id="games-list"></ul>
-        </div>
+        <h2>Saved Games</h2>
+        <ul id="games-list"></ul>
     </div>
 
-    <script src="script.js"></script>
+    <script type="module" src="src/main.js"></script>
 </body>
 </html>
